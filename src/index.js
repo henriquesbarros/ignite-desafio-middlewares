@@ -26,27 +26,27 @@ function checksExistsUserAccount(request, response, next) {
 function checksCreateTodosUserAvailability(request, response, next) {
   const { user } = request;
 
-  const userFree = !user.pro && user.todos.length < 10;
+  if (user.pro) next();
 
-  if (userFree || user.pro) {
-    return response.status(403);
+  if (!user.pro && user.todos.length <= 10) next();
+
+  if (!user.pro && user.todos.length >= 10) {
+    return response.status(403).json({ error: "Do you not have enough access!" })
   }
-
-  next();
-
 }
 
 function checksTodoExists(request, response, next) {
   const { username } = request.headers;
   const { id } = request.params;
 
-  const user = users.find(user => user.username === username);
-  if (!user) return response.status(404);
+  const checkUuid = validate(id);
+  if (!checkUuid) return response.status(400).json({ error: "Do you not have enough access!" });
 
-  if (!validate(id)) return response.status(404);
+  const user = users.find(user => user.username === username);
+  if (!user) return response.status(404).json({ error: "User not found!" });
 
   const todo = user.todos.find(todo => todo.id === id)
-  if (!todo) return response.status(404);
+  if (!todo) return response.status(404).json({ error: "User or Todo not found!" });
 
   request.user = user;
   request.todo = todo;
